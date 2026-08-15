@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<title>Mijn Spaarpot</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Spaarpot">
+<style>
+  :root {
+    --c1:#059669; --c2:#10b981; --c3:#34d399;
+    --glow:rgba(16,185,129,.35);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:#0f172a; color:#e2e8f0; display:flex; justify-content:center;
+  }
+  .app {
+    width:100%; max-width:430px; min-height:100vh;
+    background:linear-gradient(180deg,#0f172a 0%,#1e293b 100%);
+    display:flex; flex-direction:column; padding-bottom:96px; position:relative;
+  }
+  .screen { display:none; flex-direction:column; flex:1; }
+  .screen.active { display:flex; }
+
+  /* ===== Gradient headers ===== */
+  .grad {
+    background:linear-gradient(135deg,var(--c1) 0%,var(--c2) 50%,var(--c3) 100%);
+    box-shadow:0 8px 30px var(--glow);
+  }
+
+  /* ===== Login ===== */
+  .login-wrap { flex:1; display:flex; flex-direction:column; justify-content:center; padding:28px 24px; }
+  .login-logo { text-align:center; margin-bottom:26px; }
+  .login-logo .big { font-size:60px; }
+  .login-logo h1 { font-size:26px; font-weight:800; margin-top:8px; }
+  .login-logo p { color:#94a3b8; font-size:14px; margin-top:6px; line-height:1.5; }
+  .tabs { display:flex; background:#1e293b; border-radius:14px; padding:4px; margin-bottom:18px; }
+  .tabs button {
+    flex:1; border:none; background:none; color:#94a3b8; font-size:15px; font-weight:700;
+    padding:11px; border-radius:11px; cursor:pointer;
+  }
+  .tabs button.on { background:var(--c2); color:#fff; }
+  .login-err {
+    display:none; background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.35);
+    color:#fca5a5; font-size:13.5px; border-radius:12px; padding:10px 12px; margin-bottom:14px; line-height:1.5;
+  }
+  .login-err.show { display:block; }
+  .skip { text-align:center; margin-top:18px; }
+  .skip button { background:none; border:none; color:#64748b; font-size:14px; cursor:pointer; text-decoration:underline; }
+
+  /* ===== Home (doelenlijst) ===== */
+  .home-header { padding:22px 20px 20px; border-radius:0 0 28px 28px; }
+  .home-header .top { display:flex; justify-content:space-between; align-items:center; }
+  .home-header h1 { font-size:15px; font-weight:600; color:rgba(255,255,255,.85); letter-spacing:.5px; text-transform:uppercase; }
+  .home-header .total { font-size:38px; font-weight:800; color:#fff; letter-spacing:-1px; margin-top:10px; }
+  .home-header .sub { font-size:14px; color:rgba(255,255,255,.85); margin-top:2px; }
+  .btn-icon {
+    background:rgba(255,255,255,.2); border:none; color:#fff;
+    width:38px; height:38px; border-radius:12px; font-size:17px; cursor:pointer;
+  }
+  .goal-list { padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .goal-card {
+    background:#1e293b; border:1px solid #2d3b52; border-radius:20px; padding:16px; cursor:pointer;
+    transition:transform .1s;
+  }
+  .goal-card:active { transform:scale(.98); }
+  .goal-card .row1 { display:flex; align-items:center; gap:12px; }
+  .goal-card .gem {
+    width:48px; height:48px; border-radius:15px; display:flex; align-items:center; justify-content:center;
+    font-size:24px; background:rgba(255,255,255,.06); flex-shrink:0;
+  }
+  .goal-card .gname { font-size:17px; font-weight:800; }
+  .goal-card .gsaved { font-size:13.5px; color:#94a3b8; margin-top:2px; }
+  .goal-card .gpct { margin-left:auto; font-size:15px; font-weight:800; color:var(--c3); }
+  .goal-card .bar { height:9px; background:#0f172a; border-radius:99px; overflow:hidden; margin-top:13px; }
+  .goal-card .fill { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--c2),var(--c3)); transition:width .5s; }
+  .goal-card .done-tag { font-size:12px; font-weight:800; color:var(--c3); margin-top:8px; }
+
+  /* ===== Detail ===== */
+  .header { padding:18px 20px 20px; border-radius:0 0 28px 28px; }
+  .header .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .back { background:rgba(255,255,255,.2); border:none; color:#fff; padding:8px 14px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; }
+  .goal-name { font-size:24px; font-weight:800; color:#fff; word-break:break-word; }
+  .goal-emoji { font-size:24px; margin-right:6px; }
+  .saved-amount { font-size:38px; font-weight:800; color:#fff; letter-spacing:-1px; margin-top:2px; }
+  .goal-target { font-size:15px; color:rgba(255,255,255,.85); margin-top:2px; }
+  .progress-bar { height:14px; background:rgba(0,0,0,.25); border-radius:99px; overflow:hidden; margin-top:14px; }
+  .progress-fill { height:100%; background:#fff; border-radius:99px; transition:width .6s cubic-bezier(.22,1,.36,1); }
+  .progress-labels { display:flex; justify-content:space-between; margin-top:8px; font-size:13px; color:rgba(255,255,255,.9); font-weight:600; }
+  .celebrate { margin-top:14px; background:rgba(255,255,255,.25); border-radius:14px; padding:10px 14px; text-align:center; font-weight:700; color:#fff; font-size:15px; }
+
+  .stats { display:flex; gap:12px; padding:16px 20px 4px; }
+  .stat { flex:1; background:#1e293b; border:1px solid #334155; border-radius:18px; padding:13px; }
+  .stat .label { font-size:11.5px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+  .stat .value { font-size:18px; font-weight:800; margin-top:4px; }
+  .stat .value.pos { color:var(--c3); }
+  .stat .value.neg { color:#f87171; }
+  .stat .value.blue { color:#60a5fa; }
+
+  .section-title {
+    padding:20px 20px 10px; font-size:14px; font-weight:700; color:#94a3b8;
+    text-transform:uppercase; letter-spacing:.6px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .history { padding:0 16px; display:flex; flex-direction:column; gap:8px; }
+  .tx { display:flex; align-items:center; gap:12px; background:#1e293b; border:1px solid #2d3b52; border-radius:16px; padding:12px 14px; }
+  .tx .icon { width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+  .tx.save .icon { background:rgba(52,211,153,.15); }
+  .tx.spend .icon { background:rgba(248,113,113,.15); }
+  .tx .info { flex:1; min-width:0; }
+  .tx .desc { font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tx .date { font-size:12px; color:#94a3b8; margin-top:2px; }
+  .tx .amount { font-size:16px; font-weight:800; white-space:nowrap; }
+  .tx.save .amount { color:var(--c3); }
+  .tx.spend .amount { color:#f87171; }
+  .tx .del { background:none; border:none; color:#475569; font-size:16px; cursor:pointer; padding:6px 2px 6px 8px; }
+  .empty { text-align:center; color:#64748b; padding:40px 30px; font-size:15px; line-height:1.6; }
+  .empty .big { font-size:44px; margin-bottom:10px; }
+
+  /* ===== Onderbalk ===== */
+  .fab-bar {
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:430px;
+    padding:12px 16px calc(14px + env(safe-area-inset-bottom));
+    background:rgba(15,23,42,.92); backdrop-filter:blur(12px);
+    border-top:1px solid #1e293b; display:none; gap:12px; z-index:30;
+  }
+  .fab-bar.show { display:flex; }
+  .fab {
+    flex:1; border:none; border-radius:18px; padding:16px 10px; font-size:16px; font-weight:800;
+    cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; transition:transform .1s;
+  }
+  .fab:active { transform:scale(.96); }
+  .fab.save { background:linear-gradient(135deg,var(--c1),var(--c2)); box-shadow:0 4px 18px var(--glow); }
+  .fab.spend { background:linear-gradient(135deg,#dc2626,#ef4444); box-shadow:0 4px 18px rgba(239,68,68,.35); }
+  .fab.newgoal { background:linear-gradient(135deg,var(--c1),var(--c2)); box-shadow:0 4px 18px var(--glow); }
+
+  /* ===== Sheets ===== */
+  .overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(3px);
+    display:none; align-items:flex-end; justify-content:center; z-index:50;
+  }
+  .overlay.open { display:flex; }
+  .sheet {
+    width:100%; max-width:430px; background:#1e293b; border-radius:24px 24px 0 0;
+    padding:22px 20px calc(24px + env(safe-area-inset-bottom));
+    animation:slideUp .25s cubic-bezier(.22,1,.36,1); max-height:88vh; overflow-y:auto;
+  }
+  @keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .sheet h2 { font-size:20px; font-weight:800; margin-bottom:18px; }
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:13px; font-weight:600; color:#94a3b8; margin-bottom:6px; }
+  .field input {
+    width:100%; background:#0f172a; border:1.5px solid #334155; border-radius:14px;
+    padding:14px; font-size:17px; color:#e2e8f0; outline:none;
+  }
+  .field input:focus { border-color:var(--c2); }
+  .quick { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .quick button {
+    background:#0f172a; border:1.5px solid #334155; color:#cbd5e1;
+    border-radius:99px; padding:8px 14px; font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .quick button:active { border-color:var(--c2); color:var(--c3); }
+  .sheet-btns { display:flex; gap:10px; margin-top:20px; }
+  .btn { flex:1; border:none; border-radius:16px; padding:15px; font-size:16px; font-weight:800; cursor:pointer; }
+  .btn.primary { background:var(--c2); color:#fff; }
+  .btn.primary.red { background:#ef4444; }
+  .btn.ghost { background:#334155; color:#cbd5e1; }
+  .btn.danger-line { background:none; color:#f87171; }
+
+  /* ===== Instellingen: thema's ===== */
+  .theme-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .theme-opt {
+    border:2.5px solid transparent; border-radius:16px; padding:10px 6px; cursor:pointer;
+    background:#0f172a; text-align:center;
+  }
+  .theme-opt.on { border-color:#fff; }
+  .theme-opt .swatch { height:38px; border-radius:11px; margin-bottom:7px; }
+  .theme-opt .tname { font-size:12.5px; font-weight:700; color:#cbd5e1; }
+  .acct-box {
+    background:#0f172a; border:1px solid #334155; border-radius:14px; padding:13px 14px;
+    font-size:14px; color:#cbd5e1; margin-bottom:14px; line-height:1.6; word-break:break-all;
+  }
+  .sync-dot { display:inline-block; width:8px; height:8px; border-radius:99px; margin-right:6px; }
+
+  .toast {
+    position:fixed; bottom:104px; left:50%; transform:translateX(-50%);
+    background:#334155; color:#fff; font-size:14px; font-weight:600;
+    padding:10px 18px; border-radius:99px; z-index:80; display:none; white-space:nowrap;
+    box-shadow:0 6px 20px rgba(0,0,0,.4);
+  }
+  .toast.show { display:block; animation:slideUp .2s; }
+</style>
+</head>
+<body>
+<div class="app" id="appRoot">
+
+  <!-- ========== LOGIN ========== -->
+  <div class="screen" id="scrLogin">
+    <div class="login-wrap">
+      <div class="login-logo">
+        <div class="big">🐷</div>
+        <h1>Mijn Spaarpot</h1>
+        <p>Log in met je e-mail of gsm-nummer,<br>zo ben je je spaargeld nooit kwijt.</p>
+      </div>
+      <div class="tabs">
+        <button id="tabLogin" class="on" onclick="setAuthTab('login')">Inloggen</button>
+        <button id="tabReg" onclick="setAuthTab('register')">Account maken</button>
+      </div>
+      <div class="login-err" id="authErr"></div>
+      <div class="field">
+        <label>E-mail of gsm-nummer</label>
+        <input type="text" id="authId" inputmode="email" autocomplete="username" placeholder="bv. naam@mail.be of 0470 12 34 56">
+      </div>
+      <div class="field">
+        <label>Wachtwoord</label>
+        <input type="password" id="authPw" autocomplete="current-password" placeholder="minstens 4 tekens">
+      </div>
+      <button class="btn primary" style="width:100%" id="authBtn" onclick="doAuth()">Inloggen</button>
+      <div class="skip"><button onclick="skipLogin()">Verder zonder account (alleen op dit toestel)</button></div>
+      <button class="btn ghost" id="installBtnLogin" style="width:100%;margin-top:16px;display:none" onclick="installApp()">📲 App installeren op je telefoon</button>
+    </div>
+  </div>
+
+  <!-- ========== HOME: alle doelen ========== -->
+  <div class="screen" id="scrHome">
+    <div class="home-header grad">
+      <div class="top">
+        <h1>Mijn spaarpotten</h1>
+        <button class="btn-icon" onclick="openSettings()" title="Instellingen">⚙️</button>
+      </div>
+      <div class="total" id="homeTotal">€ 0,00</div>
+      <div class="sub" id="homeSub">totaal gespaard</div>
+    </div>
+    <div class="goal-list" id="goalList"></div>
+  </div>
+
+  <!-- ========== DETAIL: één doel ========== -->
+  <div class="screen" id="scrDetail">
+    <div class="header grad">
+      <div class="top">
+        <button class="back" onclick="showHome()">‹ Terug</button>
+        <button class="btn-icon" onclick="openGoalSheet(true)" title="Doel aanpassen">✏️</button>
+      </div>
+      <div class="goal-name"><span class="goal-emoji" id="dEmoji">🎯</span><span id="dName"></span></div>
+      <div class="saved-amount" id="dSaved">€ 0,00</div>
+      <div class="goal-target" id="dTarget"></div>
+      <div class="progress-bar"><div class="progress-fill" id="dFill" style="width:0%"></div></div>
+      <div class="progress-labels"><span id="dPct">0%</span><span id="dLeft"></span></div>
+      <div class="celebrate" id="dCelebrate" style="display:none">🎉 Proficiat! Je hebt je doel bereikt! 🎉</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="label">Gespaard</div><div class="value pos" id="dIn">€ 0</div></div>
+      <div class="stat"><div class="label">Uitgegeven</div><div class="value neg" id="dOut">€ 0</div></div>
+      <div class="stat"><div class="label">Per week</div><div class="value blue" id="dWeek">—</div></div>
+    </div>
+    <div class="section-title"><span>Geschiedenis</span><span id="dCount" style="font-weight:600;color:#475569;font-size:12px"></span></div>
+    <div class="history" id="dHistory"></div>
+  </div>
+
+  <!-- Onderbalken -->
+  <div class="fab-bar" id="barHome">
+    <button class="fab newgoal" onclick="openGoalSheet(false)">＋ Nieuw spaardoel</button>
+  </div>
+  <div class="fab-bar" id="barDetail">
+    <button class="fab save" onclick="openTxSheet('save')">＋ Sparen</button>
+    <button class="fab spend" onclick="openTxSheet('spend')">－ Uitgave</button>
+  </div>
+</div>
+
+<!-- Sheet: transactie -->
+<div class="overlay" id="txOverlay" onclick="if(event.target===this)closeSheets()">
+  <div class="sheet">
+    <h2 id="txTitle">Geld toevoegen</h2>
+    <div class="field">
+      <label>Bedrag (€)</label>
+      <input type="number" id="txAmount" inputmode="decimal" step="0.01" min="0" placeholder="0,00">
+      <div class="quick">
+        <button onclick="addQuick(5)">+ €5</button>
+        <button onclick="addQuick(10)">+ €10</button>
+        <button onclick="addQuick(20)">+ €20</button>
+        <button onclick="addQuick(50)">+ €50</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Omschrijving (optioneel)</label>
+      <input type="text" id="txDesc" placeholder="bv. zakgeld, snack, cadeau...">
+    </div>
+    <div class="sheet-btns">
+      <button class="btn ghost" onclick="closeSheets()">Annuleer</button>
+      <button class="btn primary" id="txConfirm" onclick="saveTx()">Toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sheet: doel toevoegen/aanpassen -->
+<div class="overlay" id="goalOverlay" onclick="if(event.target===this)closeSheets()">
+  <div class="sheet">
+    <h2 id="goalSheetTitle">Nieuw spaardoel</h2>
+    <div class="field">
+      <label>Waarvoor spaar je?</label>
+      <input type="text" id="goalNameInput" placeholder="bv. Nieuwe fiets, PlayStation, reis...">
+    </div>
+    <div class="field">
+      <label>Emoji</label>
+      <input type="text" id="goalEmojiInput" placeholder="🎯" maxlength="4">
+      <div class="quick">
+        <button onclick="setEmoji('🚲')">🚲</button>
+        <button onclick="setEmoji('🎮')">🎮</button>
+        <button onclick="setEmoji('📱')">📱</button>
+        <button onclick="setEmoji('✈️')">✈️</button>
+        <button onclick="setEmoji('👟')">👟</button>
+        <button onclick="setEmoji('🎸')">🎸</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Doelbedrag (€)</label>
+      <input type="number" id="goalAmountInput" inputmode="decimal" step="0.01" min="0" placeholder="bv. 500">
+    </div>
+    <div class="sheet-btns">
+      <button class="btn ghost" onclick="closeSheets()">Annuleer</button>
+      <button class="btn primary" onclick="saveGoal()">Opslaan</button>
+    </div>
+    <button class="btn danger-line" id="goalDeleteBtn" style="width:100%;margin-top:8px;display:none" onclick="deleteGoal()">🗑️ Dit spaardoel verwijderen</button>
+  </div>
+</div>
+
+<!-- Sheet: instellingen -->
+<div class="overlay" id="settingsOverlay" onclick="if(event.target===this)closeSheets()">
+  <div class="sheet">
+    <h2>⚙️ Instellingen</h2>
+    <div class="field"><label>Kleur van de app</label>
+      <div class="theme-grid" id="themeGrid"></div>
+    </div>
+    <div class="field" style="margin-top:18px"><label>Account</label>
+      <div class="acct-box" id="acctBox"></div>
+      <button class="btn ghost" id="acctBtn" style="width:100%" onclick="acctAction()">Uitloggen</button>
+    </div>
+    <div class="field" style="margin-top:18px"><label>App op je telefoon</label>
+      <button class="btn primary" id="installBtnSettings" style="width:100%;display:none" onclick="installApp()">📲 App installeren</button>
+      <div class="acct-box" id="installHint" style="margin-top:10px"></div>
+    </div>
+    <div class="sheet-btns">
+      <button class="btn primary" onclick="closeSheets()">Klaar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ================= Thema's =================
+  const THEMES = {
+    groen:  { c1:'#059669', c2:'#10b981', c3:'#34d399', glow:'rgba(16,185,129,.35)',  label:'Groen' },
+    blauw:  { c1:'#2563eb', c2:'#3b82f6', c3:'#60a5fa', glow:'rgba(59,130,246,.35)',  label:'Blauw' },
+    paars:  { c1:'#7c3aed', c2:'#8b5cf6', c3:'#a78bfa', glow:'rgba(139,92,246,.35)',  label:'Paars' },
+    roze:   { c1:'#db2777', c2:'#ec4899', c3:'#f472b6', glow:'rgba(236,72,153,.35)',  label:'Roze' },
+    oranje: { c1:'#ea580c', c2:'#f97316', c3:'#fb923c', glow:'rgba(249,115,22,.35)',  label:'Oranje' },
+    goud:   { c1:'#ca8a04', c2:'#eab308', c3:'#facc15', glow:'rgba(234,179,8,.35)',   label:'Goud' },
+  };
+  function applyTheme(name) {
+    const t = THEMES[name] || THEMES.groen;
+    const r = document.documentElement.style;
+    r.setProperty('--c1',t.c1); r.setProperty('--c2',t.c2); r.setProperty('--c3',t.c3); r.setProperty('--glow',t.glow);
+  }
+
+  // ================= Opslag =================
+  let memStore = {}, storageOk = true;
+  try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); } catch(e){ storageOk = false; }
+  function lsGet(k){ if(storageOk){const v=localStorage.getItem(k);return v?JSON.parse(v):null;} return memStore[k]??null; }
+  function lsSet(k,v){ if(storageOk) localStorage.setItem(k,JSON.stringify(v)); else memStore[k]=v; }
+  function lsDel(k){ if(storageOk) localStorage.removeItem(k); else delete memStore[k]; }
+
+  // ================= State =================
+  let state = lsGet('sp_state') || migrateOld() || { goals:[], theme:'groen' };
+  let session = lsGet('sp_session'); // {token, user} of null
+  let guestMode = lsGet('sp_guest') === true;
+  let currentGoalId = null;
+  let txMode = 'save';
+  let editingGoal = false;
+  let syncTimer = null, syncStatus = 'idle'; // idle | saving | ok | fail
+
+  // oude gegevens van vorige versie meenemen
+  function migrateOld() {
+    const g = lsGet('sp_goal'), t = lsGet('sp_txs');
+    if (!g && !t) return null;
+    const goal = g || { name:'Mijn spaardoel', emoji:'🎯', target:0 };
+    return { goals:[{ id:'g'+Date.now(), name:goal.name, emoji:goal.emoji, target:goal.target, txs:t||[] }], theme:'groen' };
+  }
+
+  const fmt = n => '€ ' + n.toLocaleString('nl-BE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtShort = n => '€ ' + n.toLocaleString('nl-BE',{maximumFractionDigits:0});
+  const savedOf = g => g.txs.reduce((s,t)=>s+(t.type==='save'?t.amount:-t.amount),0);
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2500); }
+
+  // ================= Bewaren + synchroniseren =================
+  function persist() {
+    lsSet('sp_state', state);
+    if (session) {
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(pushToServer, 800);
+    }
+  }
+  async function pushToServer() {
+    if (!session) return;
+    syncStatus = 'saving'; renderAcct();
+    try {
+      const r = await fetch('/api/data', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+session.token },
+        body: JSON.stringify(state)
+      });
+      if (r.status === 401) { logout(true); return; }
+      syncStatus = r.ok ? 'ok' : 'fail';
+    } catch(e) { syncStatus = 'fail'; }
+    renderAcct();
+  }
+
+  // ================= Login =================
+  let authTab = 'login';
+  function setAuthTab(t) {
+    authTab = t;
+    document.getElementById('tabLogin').classList.toggle('on', t==='login');
+    document.getElementById('tabReg').classList.toggle('on', t==='register');
+    document.getElementById('authBtn').textContent = t==='login' ? 'Inloggen' : 'Account maken';
+    document.getElementById('authErr').classList.remove('show');
+  }
+  async function doAuth() {
+    const id = document.getElementById('authId').value.trim();
+    const pw = document.getElementById('authPw').value;
+    const err = document.getElementById('authErr');
+    err.classList.remove('show');
+    const btn = document.getElementById('authBtn');
+    btn.disabled = true; btn.textContent = 'Even geduld...';
+    try {
+      const r = await fetch('/api/'+authTab, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id, password: pw })
+      });
+      const j = await r.json();
+      if (!r.ok) { err.textContent = j.error || 'Er ging iets mis.'; err.classList.add('show'); return; }
+      session = { token: j.token, user: j.user };
+      lsSet('sp_session', session); lsDel('sp_guest'); guestMode = false;
+      if (j.data && j.data.goals) {
+        // server heeft al gegevens -> die gebruiken
+        const localHasData = state.goals.some(g => g.txs.length) || state.goals.length > (j.data.goals?.length||0);
+        if (j.data.goals.length || !localHasData) state = j.data;
+        else pushToServer(); // lokaal is rijker -> uploaden
+        lsSet('sp_state', state);
+      } else {
+        pushToServer(); // nieuw account -> lokale gegevens uploaden
+      }
+      applyTheme(state.theme);
+      toast(authTab==='login' ? 'Ingelogd ✔' : 'Account gemaakt ✔');
+      showHome();
+    } catch(e) {
+      err.textContent = 'Kan de server niet bereiken. Probeer opnieuw.'; err.classList.add('show');
+    } finally {
+      btn.disabled = false; btn.textContent = authTab==='login' ? 'Inloggen' : 'Account maken';
+    }
+  }
+  function skipLogin() { guestMode = true; lsSet('sp_guest', true); showHome(); }
+  function logout(expired) {
+    session = null; lsDel('sp_session'); lsDel('sp_guest'); guestMode = false;
+    closeSheets();
+    if (expired) toast('Sessie verlopen, log opnieuw in.');
+    showScreen('scrLogin');
+  }
+
+  // ================= Schermen =================
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('barHome').classList.toggle('show', id==='scrHome');
+    document.getElementById('barDetail').classList.toggle('show', id==='scrDetail');
+    window.scrollTo(0,0);
+  }
+  function showHome() { currentGoalId = null; renderHome(); showScreen('scrHome'); }
+  function openGoal(id) { currentGoalId = id; renderDetail(); showScreen('scrDetail'); }
+
+  // ================= Render: home =================
+  function renderHome() {
+    const total = state.goals.reduce((s,g)=>s+savedOf(g),0);
+    document.getElementById('homeTotal').textContent = fmt(total);
+    document.getElementById('homeSub').textContent = state.goals.length
+      ? 'totaal gespaard · ' + state.goals.length + (state.goals.length===1?' doel':' doelen') : 'totaal gespaard';
+    const list = document.getElementById('goalList');
+    if (!state.goals.length) {
+      list.innerHTML = '<div class="empty"><div class="big">🐷</div>Nog geen spaardoelen.<br>Druk op <b>＋ Nieuw spaardoel</b> om te beginnen!</div>';
+      return;
+    }
+    list.innerHTML = state.goals.map(g => {
+      const saved = savedOf(g);
+      const pct = g.target>0 ? Math.max(0,Math.min(100,saved/g.target*100)) : 0;
+      const done = g.target>0 && saved>=g.target;
+      return `<div class="goal-card" onclick="openGoal('${g.id}')">
+        <div class="row1">
+          <div class="gem">${g.emoji}</div>
+          <div><div class="gname">${escapeHtml(g.name)}</div>
+          <div class="gsaved">${fmt(saved)}${g.target>0?' van '+fmt(g.target):''}</div></div>
+          <div class="gpct">${g.target>0?Math.floor(pct)+'%':''}</div>
+        </div>
+        <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+        ${done?'<div class="done-tag">🎉 Doel bereikt!</div>':''}
+      </div>`;
+    }).join('');
+  }
+
+  // ================= Render: detail =================
+  function goalById(id){ return state.goals.find(g=>g.id===id); }
+  function renderDetail() {
+    const g = goalById(currentGoalId);
+    if (!g) { showHome(); return; }
+    const totalIn = g.txs.filter(t=>t.type==='save').reduce((s,t)=>s+t.amount,0);
+    const totalOut = g.txs.filter(t=>t.type==='spend').reduce((s,t)=>s+t.amount,0);
+    const saved = totalIn - totalOut;
+    document.getElementById('dEmoji').textContent = g.emoji;
+    document.getElementById('dName').textContent = g.name;
+    document.getElementById('dSaved').textContent = fmt(saved);
+    document.getElementById('dTarget').textContent = g.target>0 ? 'van '+fmt(g.target) : 'Stel je doelbedrag in via ✏️';
+    const pct = g.target>0 ? Math.max(0,Math.min(100,saved/g.target*100)) : 0;
+    document.getElementById('dFill').style.width = pct+'%';
+    document.getElementById('dPct').textContent = Math.floor(pct)+'%';
+    const left = Math.max(0,g.target-saved);
+    document.getElementById('dLeft').textContent = g.target>0 ? (left>0?'nog '+fmt(left)+' te gaan':'Doel bereikt!') : '';
+    document.getElementById('dCelebrate').style.display = (g.target>0 && saved>=g.target)?'block':'none';
+    document.getElementById('dIn').textContent = fmtShort(totalIn);
+    document.getElementById('dOut').textContent = fmtShort(totalOut);
+    if (g.txs.length>=2) {
+      const dates = g.txs.map(t=>t.date).sort();
+      const weeks = Math.max(1,(new Date(dates[dates.length-1])-new Date(dates[0]))/(7*24*3600*1000));
+      document.getElementById('dWeek').textContent = fmtShort(saved/weeks);
+    } else document.getElementById('dWeek').textContent = '—';
+
+    const h = document.getElementById('dHistory');
+    document.getElementById('dCount').textContent = g.txs.length ? g.txs.length+' items' : '';
+    if (!g.txs.length) {
+      h.innerHTML = '<div class="empty"><div class="big">💸</div>Nog niets toegevoegd.<br>Druk op <b>＋ Sparen</b> of <b>－ Uitgave</b>.</div>';
+      return;
+    }
+    h.innerHTML = g.txs.slice().reverse().map(t=>`
+      <div class="tx ${t.type}">
+        <div class="icon">${t.type==='save'?'💰':'🛒'}</div>
+        <div class="info">
+          <div class="desc">${escapeHtml(t.desc||(t.type==='save'?'Gespaard':'Uitgave'))}</div>
+          <div class="date">${new Date(t.date).toLocaleDateString('nl-BE',{day:'numeric',month:'short',year:'numeric'})}</div>
+        </div>
+        <div class="amount">${t.type==='save'?'+':'−'} ${fmt(t.amount)}</div>
+        <button class="del" onclick="delTx('${t.id}')" title="Verwijderen">✕</button>
+      </div>`).join('');
+  }
+
+  // ================= Transacties =================
+  function openTxSheet(mode) {
+    txMode = mode;
+    document.getElementById('txTitle').textContent = mode==='save'?'💰 Geld sparen':'🛒 Uitgave toevoegen';
+    const btn = document.getElementById('txConfirm');
+    btn.textContent = mode==='save'?'Sparen':'Uitgave opslaan';
+    btn.classList.toggle('red', mode==='spend');
+    document.getElementById('txAmount').value=''; document.getElementById('txDesc').value='';
+    document.getElementById('txOverlay').classList.add('open');
+    setTimeout(()=>document.getElementById('txAmount').focus(),250);
+  }
+  function addQuick(n){ const i=document.getElementById('txAmount'); i.value=((parseFloat(i.value)||0)+n).toFixed(2).replace(/\.00$/,''); }
+  function saveTx() {
+    const g = goalById(currentGoalId); if (!g) return;
+    const amount = parseFloat(String(document.getElementById('txAmount').value).replace(',','.'));
+    if (!amount || amount<=0) { document.getElementById('txAmount').focus(); return; }
+    g.txs.push({ id:Date.now()+''+Math.random().toString(36).slice(2,6), type:txMode,
+      amount:Math.round(amount*100)/100, desc:document.getElementById('txDesc').value.trim(), date:new Date().toISOString() });
+    persist(); closeSheets(); renderDetail();
+  }
+  function delTx(id) {
+    if (!confirm('Dit item verwijderen?')) return;
+    const g = goalById(currentGoalId); if (!g) return;
+    g.txs = g.txs.filter(t=>t.id!==id);
+    persist(); renderDetail();
+  }
+
+  // ================= Doelen =================
+  function openGoalSheet(edit) {
+    editingGoal = !!edit;
+    document.getElementById('goalSheetTitle').textContent = edit?'Spaardoel aanpassen':'Nieuw spaardoel';
+    document.getElementById('goalDeleteBtn').style.display = edit?'block':'none';
+    if (edit) {
+      const g = goalById(currentGoalId); if (!g) return;
+      document.getElementById('goalNameInput').value = g.name;
+      document.getElementById('goalEmojiInput').value = g.emoji;
+      document.getElementById('goalAmountInput').value = g.target||'';
+    } else {
+      document.getElementById('goalNameInput').value='';
+      document.getElementById('goalEmojiInput').value='';
+      document.getElementById('goalAmountInput').value='';
+    }
+    document.getElementById('goalOverlay').classList.add('open');
+  }
+  function setEmoji(e){ document.getElementById('goalEmojiInput').value=e; }
+  function saveGoal() {
+    const name = document.getElementById('goalNameInput').value.trim();
+    const emoji = document.getElementById('goalEmojiInput').value.trim() || '🎯';
+    const target = parseFloat(String(document.getElementById('goalAmountInput').value).replace(',','.'));
+    const tgt = (target && target>0) ? Math.round(target*100)/100 : 0;
+    if (editingGoal) {
+      const g = goalById(currentGoalId); if (!g) return;
+      g.name = name || g.name; g.emoji = emoji; g.target = tgt;
+      persist(); closeSheets(); renderDetail();
+    } else {
+      if (!name) { document.getElementById('goalNameInput').focus(); return; }
+      const g = { id:'g'+Date.now()+Math.random().toString(36).slice(2,5), name, emoji, target:tgt, txs:[] };
+      state.goals.push(g);
+      persist(); closeSheets(); openGoal(g.id);
+    }
+  }
+  function deleteGoal() {
+    const g = goalById(currentGoalId); if (!g) return;
+    if (!confirm('"'+g.name+'" verwijderen? De hele geschiedenis van dit doel gaat verloren.')) return;
+    state.goals = state.goals.filter(x=>x.id!==currentGoalId);
+    persist(); closeSheets(); showHome();
+  }
+
+  // ================= Instellingen =================
+  function openSettings() {
+    const grid = document.getElementById('themeGrid');
+    grid.innerHTML = Object.entries(THEMES).map(([key,t])=>`
+      <div class="theme-opt ${state.theme===key?'on':''}" onclick="pickTheme('${key}')">
+        <div class="swatch" style="background:linear-gradient(135deg,${t.c1},${t.c3})"></div>
+        <div class="tname">${t.label}</div>
+      </div>`).join('');
+    renderAcct();
+    updateInstallUI();
+    document.getElementById('settingsOverlay').classList.add('open');
+  }
+  function pickTheme(key) {
+    state.theme = key; applyTheme(key); persist();
+    document.querySelectorAll('.theme-opt').forEach(el=>el.classList.remove('on'));
+    event.currentTarget.classList.add('on');
+    renderHome(); if (currentGoalId) renderDetail();
+  }
+  function renderAcct() {
+    const box = document.getElementById('acctBox');
+    const btn = document.getElementById('acctBtn');
+    if (!box) return;
+    if (session) {
+      const nice = session.user.replace(/^email:/,'').replace(/^tel:/,'');
+      const dot = syncStatus==='fail' ? '#f87171' : syncStatus==='saving' ? '#facc15' : '#34d399';
+      const txt = syncStatus==='fail' ? 'synchronisatie mislukt' : syncStatus==='saving' ? 'bezig met opslaan...' : 'alles bewaard op de server';
+      box.innerHTML = 'Ingelogd als <b>'+escapeHtml(nice)+'</b><br><span class="sync-dot" style="background:'+dot+'"></span>'+txt;
+      btn.textContent = 'Uitloggen';
+    } else {
+      box.innerHTML = '⚠️ Je bent <b>niet ingelogd</b>. Je gegevens staan alleen op dit toestel. Maak een account zodat je niets kwijt bent.';
+      btn.textContent = 'Inloggen / account maken';
+    }
+  }
+  function acctAction() {
+    if (session) { if (confirm('Uitloggen? Je gegevens blijven veilig op de server staan.')) logout(); }
+    else { closeSheets(); showScreen('scrLogin'); }
+  }
+
+  function closeSheets() {
+    ['txOverlay','goalOverlay','settingsOverlay'].forEach(id=>document.getElementById(id).classList.remove('open'));
+  }
+
+  // ================= App installeren (PWA) =================
+  let deferredInstall = null;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  }
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstall = e;
+    updateInstallUI();
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredInstall = null;
+    updateInstallUI();
+    toast('App geïnstalleerd! 🎉 Kijk tussen je apps.');
+  });
+  function updateInstallUI() {
+    const btnL = document.getElementById('installBtnLogin');
+    const btnS = document.getElementById('installBtnSettings');
+    const hint = document.getElementById('installHint');
+    const showBtn = !!deferredInstall && !isStandalone;
+    if (btnL) btnL.style.display = showBtn ? 'block' : 'none';
+    if (btnS) btnS.style.display = showBtn ? 'block' : 'none';
+    if (hint) {
+      if (isStandalone) {
+        hint.innerHTML = '✅ De app is <b>geïnstalleerd</b> — je gebruikt ze nu als app!';
+      } else if (showBtn) {
+        hint.innerHTML = 'Druk op de knop hierboven en de app komt tussen je andere apps te staan.';
+      } else if (isIOS) {
+        hint.innerHTML = '📲 <b>Installeren op iPhone/iPad:</b><br>1. Open deze pagina in <b>Safari</b><br>2. Druk op de <b>deel-knop</b> (vierkantje met pijl ↑)<br>3. Kies <b>"Zet op beginscherm"</b>';
+      } else {
+        hint.innerHTML = '📲 <b>Installeren op Android:</b><br>1. Open deze pagina in <b>Chrome</b><br>2. Druk op het menu <b>⋮</b> rechtsboven<br>3. Kies <b>"App installeren"</b> of <b>"Toevoegen aan startscherm"</b>';
+      }
+    }
+  }
+  async function installApp() {
+    if (!deferredInstall) return;
+    deferredInstall.prompt();
+    const { outcome } = await deferredInstall.userChoice;
+    if (outcome === 'accepted') deferredInstall = null;
+    updateInstallUI();
+  }
+
+  // ================= Start =================
+  applyTheme(state.theme);
+  updateInstallUI();
+  async function boot() {
+    if (session) {
+      // gegevens van de server ophalen
+      try {
+        const r = await fetch('/api/data', { headers:{ 'Authorization':'Bearer '+session.token } });
+        if (r.ok) {
+          const j = await r.json();
+          if (j.data && j.data.goals) { state = j.data; lsSet('sp_state', state); applyTheme(state.theme); }
+          syncStatus = 'ok';
+        } else if (r.status === 401) { logout(true); return; }
+      } catch(e) { syncStatus = 'fail'; toast('Geen verbinding — je werkt nu lokaal.'); }
+      showHome();
+    } else if (guestMode) {
+      showHome();
+    } else {
+      showScreen('scrLogin');
+    }
+  }
+  boot();
+</script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installeer Mijn Spaarpot</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:linear-gradient(180deg,#0f172a,#1e293b); color:#e2e8f0;
+    min-height:100vh; display:flex; justify-content:center; padding:30px 20px;
+  }
+  .card { max-width:480px; width:100%; text-align:center; }
+  .pig { font-size:64px; }
+  h1 { font-size:28px; font-weight:800; margin:10px 0 6px; }
+  .sub { color:#94a3b8; font-size:15px; line-height:1.6; margin-bottom:24px; }
+  .qr-box { background:#fff; border-radius:24px; padding:18px; display:inline-block; box-shadow:0 10px 40px rgba(16,185,129,.25); }
+  .qr-box img { width:240px; height:240px; display:block; }
+  .link {
+    display:block; background:#1e293b; border:1.5px solid #10b981; border-radius:16px;
+    padding:16px; margin:22px 0 8px; color:#34d399; font-weight:700; font-size:15px;
+    word-break:break-all; text-decoration:none;
+  }
+  .link:active { background:#10b981; color:#fff; }
+  .steps { text-align:left; background:#1e293b; border:1px solid #334155; border-radius:20px; padding:20px; margin-top:22px; }
+  .steps h2 { font-size:16px; font-weight:800; margin-bottom:12px; color:#34d399; }
+  .steps ol { padding-left:22px; font-size:14.5px; line-height:2; color:#cbd5e1; }
+  .steps b { color:#fff; }
+  .note { font-size:12.5px; color:#64748b; margin-top:22px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="pig">🐷</div>
+  <h1>Mijn Spaarpot</h1>
+  <p class="sub">Scan de QR-code met de camera van je telefoon,<br>of druk op de link hieronder.</p>
+  <div class="qr-box"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaQAAAGkAQAAAABWN2yYAAACU0lEQVR4nO2cXW5jIQyFj6u8mx1k/8vqDmAFngcbTJIrdWYamktzUBTx9ykgWbaxIWL499I+/gMCSJEiRYoUKVJ/QTUZJZoFALwpIvcTdtkXqd0o81KBJgDsU2K8CdRuJrxohaTegmpd16nJ1aCGJmbTIWZMeNUKSb0fFRa5AAgNue63SJECLvcdrdgkeI8i+I3fIkXqK0otrHD3Br0yenLCq1ZI6jdToQ9T77Vi/t2KNYnve8V4/n2R2ou6AEjVB0BN+geAAKJ2M+GnV0jqHSh4NCY/N/EZQM0tsg/1+vn3RWovajqnqEFNAGtlKEAB4tiiJlrdRu+wL1J7UakPo2hXhr0SarDPoT4ktYBKQzyZXVjNA7KPR5N2mdRSyhMonzKSy3PJsHZjfpnUSqoJALlaCKHeZPRGlfllUmsopFEePY/HZz9BjwsPtMuknkxhFrNMqYysCjA8wymGc/59kdqLwiyEqQNrPy8fCSflkNSzqZ5P8cCg2pTgkzDVrWRP1M+/L1J7UThWg8BwGkdnhnGoD0k9merhQS93bmGNTvqHpBZTFyDu2IhW9Ks1NmzxyOs1MaDL6/n3RWovaorMPBycZwPNvB6plVR3C6dmWOeaQyPTB8ohqZVUKkNv1sitHKRXXrRCUr+a6ve+WoG7f+4rAnHFSyta8WAO/UNSP0dppJjlamgy+YTz09EN90Xq1NTBe72s+9OAcSdWDYxjk1pC5T2HuZIXX+dXe4wfklpFHb/XC+FTE/+bkRzluwBSKyixr+c8FP7/ISlSpEiRIrWE+gPZ+QP00u8BCQAAAABJRU5ErkJggg==" alt="QR-code naar de app"></div>
+  <a class="link" href="https://8000-imjo0qsx66mc5c1l7qgb2.e2b.app">https://8000-imjo0qsx66mc5c1l7qgb2.e2b.app</a>
+  <div class="steps">
+    <h2>📲 Android (Chrome)</h2>
+    <ol>
+      <li>Open de link hierboven</li>
+      <li>Er verschijnt een knop <b>"App installeren"</b> — druk erop<br>(of via menu <b>⋮</b> → <b>App installeren</b>)</li>
+      <li>Klaar! De app staat tussen je andere apps 🎉</li>
+    </ol>
+  </div>
+  <div class="steps">
+    <h2>📲 iPhone / iPad (Safari)</h2>
+    <ol>
+      <li>Open de link in <b>Safari</b></li>
+      <li>Druk op de <b>deel-knop</b> (vierkant met pijl ↑)</li>
+      <li>Kies <b>"Zet op beginscherm"</b></li>
+      <li>Klaar! De app staat op je beginscherm 🎉</li>
+    </ol>
+  </div>
+  <p class="note">Tip: log in de app in met je e-mail of gsm-nummer, dan ben je je spaargegevens nooit kwijt — ook niet als je van telefoon verandert.</p>
+</div>
+</body>
+</html>
+{
+  "name": "Mijn Spaarpot",
+  "short_name": "Spaarpot",
+  "description": "Spaar voor je doelen en houd je uitgaven bij",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "nl",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
+
+services:
+  - type: web
+    name: mijn-spaarpot
+    runtime: python
+    plan: free
+    buildCommand: "echo geen build nodig"
+    startCommand: "python server.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+
+#!/usr/bin/env python3
+"""Spaar-app server: statische bestanden + API voor accounts en gegevens."""
+import json, os, hashlib, secrets, threading, re
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+
+BASE = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE, "data")
+DB_FILE = os.path.join(DATA_DIR, "users.json")
+LOCK = threading.Lock()
+
+
+def load_db():
+    if not os.path.exists(DB_FILE):
+        return {}
+    try:
+        with open(DB_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_db(db):
+    os.makedirs(DATA_DIR, exist_ok=True)
+    tmp = DB_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(db, f, ensure_ascii=False)
+    os.replace(tmp, DB_FILE)
+
+
+def hash_pw(salt, pw):
+    return hashlib.sha256((salt + pw).encode("utf-8")).hexdigest()
+
+
+def normalize_id(raw):
+    raw = (raw or "").strip().lower()
+    if "@" in raw:
+        if re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", raw):
+            return "email:" + raw
+        return None
+    digits = re.sub(r"[^\d+]", "", raw)
+    digits_only = re.sub(r"\D", "", digits)
+    if len(digits_only) >= 8:
+        return "tel:" + digits_only
+    return None
+
+
+class Handler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=BASE, **kwargs)
+
+    def log_message(self, *args):
+        pass
+
+    # ---- helpers ----
+    def send_json(self, obj, code=200):
+        body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def read_body(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            if length <= 0 or length > 2_000_000:
+                return None
+            return json.loads(self.rfile.read(length).decode("utf-8"))
+        except Exception:
+            return None
+
+    def auth_user(self, db):
+        auth = self.headers.get("Authorization", "")
+        if not auth.startswith("Bearer "):
+            return None
+        token = auth[7:].strip()
+        if not token:
+            return None
+        for uid, u in db.items():
+            if u.get("token") == token:
+                return uid
+        return None
+
+    # ---- routes ----
+    def do_POST(self):
+        if self.path == "/api/register":
+            body = self.read_body() or {}
+            uid = normalize_id(body.get("id", ""))
+            pw = body.get("password", "")
+            if not uid:
+                return self.send_json({"error": "Geef een geldig e-mailadres of gsm-nummer op."}, 400)
+            if len(pw) < 4:
+                return self.send_json({"error": "Kies een wachtwoord van minstens 4 tekens."}, 400)
+            with LOCK:
+                db = load_db()
+                if uid in db:
+                    return self.send_json({"error": "Dit account bestaat al. Log in met je wachtwoord."}, 409)
+                salt = secrets.token_hex(16)
+                token = secrets.token_hex(24)
+                db[uid] = {
+                    "salt": salt,
+                    "pw": hash_pw(salt, pw),
+                    "token": token,
+                    "data": None,
+                }
+                save_db(db)
+            return self.send_json({"token": token, "user": uid, "data": None})
+
+        if self.path == "/api/login":
+            body = self.read_body() or {}
+            uid = normalize_id(body.get("id", ""))
+            pw = body.get("password", "")
+            if not uid:
+                return self.send_json({"error": "Geef een geldig e-mailadres of gsm-nummer op."}, 400)
+            with LOCK:
+                db = load_db()
+                u = db.get(uid)
+                if not u or hash_pw(u["salt"], pw) != u["pw"]:
+                    return self.send_json({"error": "Onbekend account of fout wachtwoord."}, 401)
+                u["token"] = secrets.token_hex(24)
+                save_db(db)
+                return self.send_json({"token": u["token"], "user": uid, "data": u.get("data")})
+
+        if self.path == "/api/data":
+            body = self.read_body()
+            with LOCK:
+                db = load_db()
+                uid = self.auth_user(db)
+                if not uid:
+                    return self.send_json({"error": "Niet ingelogd."}, 401)
+                db[uid]["data"] = body
+                save_db(db)
+            return self.send_json({"ok": True})
+
+        return self.send_json({"error": "Onbekende route."}, 404)
+
+    def do_GET(self):
+        if self.path == "/api/data":
+            with LOCK:
+                db = load_db()
+                uid = self.auth_user(db)
+                if not uid:
+                    return self.send_json({"error": "Niet ingelogd."}, 401)
+                return self.send_json({"data": db[uid].get("data"), "user": uid})
+        return super().do_GET()
+
+
+if __name__ == "__main__":
+    os.makedirs(DATA_DIR, exist_ok=True)
+    port = int(os.environ.get("PORT", 8000))
+    server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+    print(f"Spaar-app server op poort {port}")
+    server.serve_forever()
+
+// Service worker: maakt de app installeerbaar en laat ze offline werken
+const CACHE = 'spaarpot-v2';
+const ASSETS = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/icon-180.png'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  // API-verzoeken: altijd naar het netwerk (nooit cachen)
+  if (url.pathname.startsWith('/api/')) return;
+  // App-bestanden: eerst netwerk (altijd nieuwste versie), val terug op cache indien offline
+  e.respondWith(
+    fetch(e.request).then(res => {
+      if (res.ok && e.request.method === 'GET') {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+      }
+      return res;
+    }).catch(() => caches.match(e.request).then(m => m || caches.match('/index.html')))
+  );
+});
